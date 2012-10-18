@@ -1,6 +1,7 @@
 package com.rubensworks.minerva.sdk;
 
 import java.io.IOException;
+import java.io.Serializable;
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -32,11 +33,15 @@ import org.w3c.dom.Document;
 import org.xml.sax.SAXException;
 
 //FOR COOKIES: http://blog.dahanne.net/2009/08/16/how-to-access-http-resources-from-android/
-public class Minerva {
-	private Executor exec=Executors.newSingleThreadExecutor();
+public class Minerva implements Serializable{
+	private transient Executor exec=Executors.newSingleThreadExecutor();
 
 	private static final Map<String,String> DATAURLMAP=new HashMap<String,String>();
 	private volatile DataHolder tmpHolder=null;
+	private volatile String salt=null;
+	private volatile String sid=null;
+	private boolean loggedIn=false;
+	private boolean error=false;//if an error occured
 	public String data=null;
 	
 	public Minerva() {
@@ -50,16 +55,17 @@ public class Minerva {
 			@Override
 			public void onError(Exception e) {
 				tmpHolder=new DataHolder("error",e.getMessage());
+				error=true;
 			}
 
 			@Override
 			public void onComplete(DataHolder data) {
 				tmpHolder=data;
-				
+				salt=tmpHolder.getData()[0].getValue();
 			}
 			
 		});
-		while (tmpHolder==null) {
+		/*while (tmpHolder==null) {
 			try {
 				Thread.sleep(10);
 			} catch (InterruptedException e1) {
@@ -68,15 +74,33 @@ public class Minerva {
 		}
 		
 		if(!tmpHolder.isError())
-			System.out.println("SALT: "+tmpHolder.getData()[0].getValue());
+			salt=tmpHolder.getData()[0].getValue();//System.out.println("SALT: "+tmpHolder.getData()[0].getValue());
 		else
-			System.out.println("An error occured: "+tmpHolder.getValue());
+			System.out.println("An error occured: "+tmpHolder.getValue());*/
+	}
+	
+	public boolean login(final String username, final String pwd) {
+		if(error)
+			return false;
 		
+		while (salt==null) {
+			try {
+				Thread.sleep(10);
+			} catch (InterruptedException e1) {
+				//do nothing
+			}
+		}
 		//TODO: Save SID (+10min Timer) and use it to perform all the API magic! + nice login form
 		exec.execute(new Runnable() {
-            public void run() {
-            	System.out.println(getSID("rtaelman","PWDGOESHERE",tmpHolder.getData()[0].getValue()));
-            }});
+			public void run() {
+				sid=getSID(username,pwd,salt);
+		        loggedIn=true;
+		    }});
+		return !"".equals(sid);
+	}
+	
+	public boolean isLoggedIn() {
+		return loggedIn;
 	}
 	
 	private void getSalt(ExecutionDataHolder listener) {
@@ -116,7 +140,6 @@ public class Minerva {
 		CookieOrigin origin = new CookieOrigin("https://minerva.ugent.be", 80,"/secure/index.php?external=true", false);
 		
 		for (Header header : allHeaders) {
-			System.out.println(header.getName()+":"+header.getValue()+";");
 			BrowserCompatSpec cookieSpecBase=new BrowserCompatSpec();
 					List<Cookie> parse=null;
 					try {
