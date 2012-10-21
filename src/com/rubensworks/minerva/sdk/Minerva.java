@@ -32,24 +32,32 @@ import org.apache.http.params.HttpParams;
 import org.w3c.dom.Document;
 import org.xml.sax.SAXException;
 
+import com.rubensworks.minerva.sdk.fetch.Fetcher;
+
 //FOR COOKIES: http://blog.dahanne.net/2009/08/16/how-to-access-http-resources-from-android/
 public class Minerva implements Serializable{
 	private transient Executor exec=Executors.newSingleThreadExecutor();
 
-	private static final Map<String,String> DATAURLMAP=new HashMap<String,String>();
-	private volatile DataHolder tmpHolder=null;
-	private volatile String salt=null;
-	private volatile String sid=null;
-	private boolean loggedIn=false;
-	private boolean error=false;//if an error occured
-	public String data=null;
+	private static final Map<String,String> DATAURLMAP=new HashMap<String,String>();//to save the urls
+	private volatile DataHolder tmpHolder=null;										//temp dataholder
+	private volatile String salt=null;												//salt
+	private volatile String sid=null;												//session id from cookie
+	private String username=null;													//username after logging in
+	private boolean loggedIn=false;													//if user is logged in
+	private boolean error=false;													//if an error occured
+	private volatile boolean fetching=false;										//if the executor is busy fetching something
+	//public String data=null;	
+	private Fetcher fetcher=new Fetcher();
 	
 	public Minerva() {
-		//put map data
-		DATAURLMAP.put("auth.getSalt", "http://minerva.rubensworks.net/?method=auth.getSalt");
-		DATAURLMAP.put("minerva.login", "https://minerva.ugent.be/secure/index.php?external=true");
-		DATAURLMAP.put("minerva.index", "https://minerva.ugent.be/index.php");
 		
+		//put map data
+		DATAURLMAP.put("auth.getSalt", 			"http://minerva.rubensworks.net/v1/xml?method=auth.getSalt");
+		DATAURLMAP.put("courses.getCourses", 	"http://minerva.rubensworks.net/v1/xml?method=courses.getCourses");
+		DATAURLMAP.put("minerva.login", 		"https://minerva.ugent.be/secure/index.php?external=true");
+		DATAURLMAP.put("minerva.index", 		"https://minerva.ugent.be/index.php");
+		
+		//immediatly start fetching the salt
 		getSalt(new ExecutionDataHolder() {
 
 			@Override
@@ -62,45 +70,66 @@ public class Minerva implements Serializable{
 			public void onComplete(DataHolder data) {
 				tmpHolder=data;
 				salt=tmpHolder.getData()[0].getValue();
+				System.out.println("FETCHED SALT");
 			}
 			
 		});
-		/*while (tmpHolder==null) {
-			try {
-				Thread.sleep(10);
-			} catch (InterruptedException e1) {
-				//do nothing
-			}
+	}
+	
+	private String makeParams(String[] names, String[] params) {
+		String string="";
+		for(int i=0;i<params.length;i++) {
+			string+="&"+names[i]+"="+params[i];
 		}
-		
-		if(!tmpHolder.isError())
-			salt=tmpHolder.getData()[0].getValue();//System.out.println("SALT: "+tmpHolder.getData()[0].getValue());
-		else
-			System.out.println("An error occured: "+tmpHolder.getValue());*/
+		return "&username="+username+"&cookie="+sid+string;
 	}
 	
 	public boolean login(final String username, final String pwd) {
-		if(error)
+		this.username=username;
+		this.fetcher=new Fetcher();//resets the fetched data from the previous session
+		if(error) {
 			return false;
+		}
 		
 		while (salt==null) {
+			if(error) {
+				return false;
+			}
 			try {
 				Thread.sleep(10);
 			} catch (InterruptedException e1) {
 				//do nothing
 			}
 		}
-		//TODO: Save SID (+10min Timer) and use it to perform all the API magic! + nice login form
+		
 		exec.execute(new Runnable() {
 			public void run() {
 				sid=getSID(username,pwd,salt);
 		        loggedIn=true;
 		    }});
-		return !"".equals(sid);
+		while (sid==null) {
+			if(error) {
+				return false;
+			}
+			try {
+				Thread.sleep(10);
+			} catch (InterruptedException e1) {
+				//do nothing
+			}
+		}
+		
+		//FETCH COURSES & CHECK IF VALID
+		return this.getFetcher().fetchCourses(this)!=null;
+		
+		//return !("".equals(sid));
 	}
 	
 	public boolean isLoggedIn() {
 		return loggedIn;
+	}
+	
+	public void getCourses(ExecutionDataHolder listener) {//add check! & state update
+		this.execute(DATAURLMAP.get("courses.getCourses")+this.makeParams(new String[0],new String[0]), listener);
 	}
 	
 	private void getSalt(ExecutionDataHolder listener) {
@@ -108,6 +137,7 @@ public class Minerva implements Serializable{
 	}
 	
 	private String getSID(String username, String pwd, String salt) {
+		
 		Cookie sessionCookie =null;
 		HttpPost httpPost = new HttpPost(DATAURLMAP.get("minerva.login")); 
 		DefaultHttpClient httpclient = new DefaultHttpClient();
@@ -124,6 +154,7 @@ public class Minerva implements Serializable{
 		} catch (UnsupportedEncodingException e2) {
 			// TODO Auto-generated catch block
 			e2.printStackTrace();
+			error=true;
 		}
 		httpPost.setEntity(formEntity);
 		HttpResponse response=null;
@@ -132,9 +163,13 @@ public class Minerva implements Serializable{
 		} catch (ClientProtocolException e1) {
 			// TODO Auto-generated catch block
 			e1.printStackTrace();
+			error=true;
+			
 		} catch (IOException e1) {
 			// TODO Auto-generated catch block
 			e1.printStackTrace();
+			error=true;
+			
 		}
 		Header[] allHeaders = response.getAllHeaders();
 		CookieOrigin origin = new CookieOrigin("https://minerva.ugent.be", 80,"/secure/index.php?external=true", false);
@@ -147,6 +182,7 @@ public class Minerva implements Serializable{
 					} catch (MalformedCookieException e) {
 						// TODO Auto-generated catch block
 						e.printStackTrace();
+						error=true;
 					}
 					for (Cookie cookie : parse) {
 						// THE cookie
@@ -156,12 +192,16 @@ public class Minerva implements Serializable{
 						}
 					}
 		}
+		
 		return sessionCookie==null?"":sessionCookie.getValue();
 	}
 	
 	private void execute(final String dataUrl, final ExecutionDataHolder listener) {
+		if(exec==null)
+			exec=Executors.newSingleThreadExecutor();
 		exec.execute(new Runnable() {
             public void run() {
+            	fetching=true;
             	//starting data load
             	
             	HttpGet uri = new HttpGet(dataUrl);    
@@ -173,9 +213,11 @@ public class Minerva implements Serializable{
         		} catch (ClientProtocolException e) {
         			listener.onError(e);
         			e.printStackTrace();
+        			error=true;
         		} catch (IOException e) { 
         			listener.onError(e);
         			e.printStackTrace();
+        			error=true;
         		}
         		if(resp!=null) {
 	            	DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
@@ -187,15 +229,19 @@ public class Minerva implements Serializable{
 	        		} catch (ParserConfigurationException e) {
 	        			e.printStackTrace();
 	        			listener.onError(e);
+	        			error=true;
 	        		} catch (IllegalStateException e) {
 	        			e.printStackTrace();
 	        			listener.onError(e);
+	        			error=true;
 	        		} catch (SAXException e) {
 	        			e.printStackTrace();
 	        			listener.onError(e);
+	        			error=true;
 	        		} catch (IOException e) {
 	        			e.printStackTrace();
 	        			listener.onError(e);
+	        			error=true;
 	        		}
 	        		
 	        		if(doc!=null) {
@@ -205,10 +251,28 @@ public class Minerva implements Serializable{
 		        			listener.onComplete(data);
 		        		} catch (IOException e) {
 		        			e.printStackTrace();
+		        			error=true;
 		        		}
 	        		}
         		}
+        		fetching=false;
             }
           });
+	}
+	
+	public boolean isFetching() {
+		return this.fetching;
+	}
+	
+	public boolean isError() {
+		return this.error;
+	}
+	
+	public void resetError() {
+		this.error=false;
+	}
+	
+	public Fetcher getFetcher() {
+		return this.fetcher;
 	}
 }

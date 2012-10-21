@@ -1,5 +1,7 @@
 package com.rubensworks.minerva.sdk;
 
+import java.io.Serializable;
+
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
@@ -8,7 +10,7 @@ import org.w3c.dom.NodeList;
  * @author Ruben Taelman
  *
  */
-public class DataHolder {
+public class DataHolder implements Serializable{
 	private String name;
 	private String value;
 	private DataHolder[] data;
