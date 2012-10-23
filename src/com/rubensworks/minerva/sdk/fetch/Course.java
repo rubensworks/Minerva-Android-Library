@@ -2,9 +2,10 @@ package com.rubensworks.minerva.sdk.fetch;
 
 import java.io.Serializable;
 
-public class Course implements Serializable{
+public class Course{
 	private String name;
 	private String cid;
+	private Tools tools;
 	
 	public Course(String cid, String name) {
 		this.cid=cid;
@@ -17,5 +18,13 @@ public class Course implements Serializable{
 	
 	public String getCid() {
 		return this.cid;
+	}
+	
+	public Tools getTools() {
+		return this.tools;
+	}
+	
+	public void setTools(Tools tools) {
+		this.tools=tools;
 	}
 }

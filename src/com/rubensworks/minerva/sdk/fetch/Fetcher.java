@@ -6,8 +6,9 @@ import com.rubensworks.minerva.sdk.DataHolder;
 import com.rubensworks.minerva.sdk.ExecutionDataHolder;
 import com.rubensworks.minerva.sdk.Minerva;
 
-public class Fetcher implements Serializable{
+public class Fetcher{
 	volatile DataHolder coursesData=null;
+	volatile DataHolder toolsData=null;
 	private Course[] courses=null;
 	
 	public Course[] fetchCourses(Minerva minerva) {
@@ -49,5 +50,54 @@ public class Fetcher implements Serializable{
 	
 	public Course[] getCourses() {
 		return this.courses;
+	}
+	
+	public Tools fetchTools(Minerva minerva, String cid) {
+		minerva.getTools(new ExecutionDataHolder() {
+
+			@Override
+			public void onError(Exception e) {
+				System.out.println("error");
+			}
+
+			@Override
+			public void onComplete(DataHolder data) {
+				toolsData=data;
+			}
+			
+		},cid);
+		
+		while(toolsData==null) {
+			if(minerva.isError())
+				return null;
+			try {
+				Thread.sleep(100);
+			} catch (InterruptedException e1) {
+				e1.printStackTrace();
+				return null;
+			}
+		}
+		
+		if(toolsData.getData()==null || toolsData.getData().length==0 || toolsData.getData()[0].getData()==null || toolsData.getData()[0].getData().length==0)
+			return null;
+		
+		Tools tools=new Tools(toolsData);
+		
+		for(int i=0;i<courses.length;i++) {
+			if(courses[i].getCid().equals(cid))
+				courses[i].setTools(tools);
+		}
+		
+		return tools;
+	}
+	
+	public Tools getTools(String cid) {
+		if(courses==null)
+			return null;
+		for(int i=0;i<courses.length;i++) {
+			if(courses[i].getCid().equals(cid))
+				return courses[i].getTools();
+		}
+		return null;
 	}
 }

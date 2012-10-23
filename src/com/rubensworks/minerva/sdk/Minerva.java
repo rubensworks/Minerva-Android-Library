@@ -35,8 +35,8 @@ import org.xml.sax.SAXException;
 import com.rubensworks.minerva.sdk.fetch.Fetcher;
 
 //FOR COOKIES: http://blog.dahanne.net/2009/08/16/how-to-access-http-resources-from-android/
-public class Minerva implements Serializable{
-	private transient Executor exec=Executors.newSingleThreadExecutor();
+public class Minerva{
+	private Executor exec=Executors.newSingleThreadExecutor();
 
 	private static final Map<String,String> DATAURLMAP=new HashMap<String,String>();//to save the urls
 	private volatile DataHolder tmpHolder=null;										//temp dataholder
@@ -54,6 +54,7 @@ public class Minerva implements Serializable{
 		//put map data
 		DATAURLMAP.put("auth.getSalt", 			"http://minerva.rubensworks.net/v1/xml?method=auth.getSalt");
 		DATAURLMAP.put("courses.getCourses", 	"http://minerva.rubensworks.net/v1/xml?method=courses.getCourses");
+		DATAURLMAP.put("courses.getTools",	 	"http://minerva.rubensworks.net/v1/xml?method=courses.getTools");
 		DATAURLMAP.put("minerva.login", 		"https://minerva.ugent.be/secure/index.php?external=true");
 		DATAURLMAP.put("minerva.index", 		"https://minerva.ugent.be/index.php");
 		
@@ -85,6 +86,7 @@ public class Minerva implements Serializable{
 	}
 	
 	public boolean login(final String username, final String pwd) {
+		this.loggedIn=false;
 		this.username=username;
 		this.fetcher=new Fetcher();//resets the fetched data from the previous session
 		if(error) {
@@ -128,8 +130,20 @@ public class Minerva implements Serializable{
 		return loggedIn;
 	}
 	
+	public void logOut() {
+		this.loggedIn=false;
+		this.username=null;
+		this.fetcher=null;
+		//this.salt=null;
+		this.sid=null;
+	}
+	
 	public void getCourses(ExecutionDataHolder listener) {//add check! & state update
 		this.execute(DATAURLMAP.get("courses.getCourses")+this.makeParams(new String[0],new String[0]), listener);
+	}
+	
+	public void getTools(ExecutionDataHolder listener, String cid) {//add check! & state update
+		this.execute(DATAURLMAP.get("courses.getTools")+this.makeParams(new String[]{"cid"},new String[]{cid}), listener);
 	}
 	
 	private void getSalt(ExecutionDataHolder listener) {
