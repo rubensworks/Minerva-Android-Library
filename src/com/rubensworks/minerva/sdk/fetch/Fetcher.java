@@ -6,6 +6,9 @@ import java.util.Map;
 import com.rubensworks.minerva.sdk.DataHolder;
 import com.rubensworks.minerva.sdk.ExecutionDataHolder;
 import com.rubensworks.minerva.sdk.Minerva;
+import com.rubensworks.minerva.sdk.data.Announcement;
+import com.rubensworks.minerva.sdk.data.Course;
+import com.rubensworks.minerva.sdk.data.Tools;
 
 public class Fetcher{
 	private FetchCourses fetchCourses=new FetchCourses();
