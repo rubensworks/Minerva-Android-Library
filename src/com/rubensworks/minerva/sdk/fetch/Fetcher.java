@@ -1,113 +1,71 @@
 package com.rubensworks.minerva.sdk.fetch;
 
-import java.io.Serializable;
+import java.util.HashMap;
+import java.util.Map;
 
 import com.rubensworks.minerva.sdk.DataHolder;
 import com.rubensworks.minerva.sdk.ExecutionDataHolder;
 import com.rubensworks.minerva.sdk.Minerva;
 
 public class Fetcher{
-	volatile DataHolder coursesData=null;
-	volatile DataHolder toolsData=null;
-	volatile DataHolder announcementsData=null;
+	private FetchCourses fetchCourses=new FetchCourses();
+	private Map<String, FetchTools> fetchTools=new HashMap<String, FetchTools>();
+	private Map<String, FetchAnnouncements> fetchAnnouncements=new HashMap<String, FetchAnnouncements>();
+	
 	private Course[] courses=null;
 	
-	public boolean dataHolderSleeper(Minerva minerva, DataHolder data) {
-		while(data==null) {
-			if(minerva.isError())
-				return false;
-			try {
-				Thread.sleep(100);
-			} catch (InterruptedException e1) {
-				e1.printStackTrace();
-				return false;
-			}
-		}
-		
-		if(data.getData()==null 
-				|| data.getData().length==0 
-				|| data.getData()[0].getData()==null 
-				|| data.getData()[0].getData().length==0
-				)
-			return false;
-		
-		return true;
-	}
-	
+	/**
+	 * Fetches the courses of this minerva user, also makes the subfetchers
+	 * @param minerva
+	 * @return
+	 */
 	public Course[] fetchCourses(Minerva minerva) {
-		minerva.getCourses(new ExecutionDataHolder() {
-
-			@Override
-			public void onError(Exception e) {
-				System.out.println("error");
-			}
-
-			@Override
-			public void onComplete(DataHolder data) {
-				coursesData=data;
-			}
-			
-		});
-		
-		while(coursesData==null) {
-			if(minerva.isError())
-				return null;
-			try {
-				Thread.sleep(100);
-			} catch (InterruptedException e1) {
-				e1.printStackTrace();
-				return null;
-			}
+		DataHolder coursesData=fetchCourses.fetch(minerva);
+		if(coursesData==null) {
+			minerva.setError();
+			return null;
 		}
 		
-		if(coursesData.getData()==null || coursesData.getData().length==0 || coursesData.getData()[0].getData()==null || coursesData.getData()[0].getData().length==0)
-			return null;
 		DataHolder[] data=coursesData.getData()[0].getData();
 		courses=new Course[data.length];
 		for(int i=0;i<data.length;i++) {
-			courses[i]=new Course(data[i].getData()[0].getValue(),data[i].getData()[1].getValue());
+			String cid=data[i].getData()[0].getValue();
+			String name=data[i].getData()[1].getValue();
+			courses[i]=new Course(cid,name);
+			fetchTools.put(cid, new FetchTools(cid));
+			fetchAnnouncements.put(cid, new FetchAnnouncements(cid));
 		}
 		
 		return courses;
 	}
 	
+	/**
+	 * Tries to get the courses, will be null if it hasn't been fetched first
+	 * @return
+	 */
 	public Course[] getCourses() {
 		return this.courses;
 	}
 	
+	/**
+	 * Fetches the tools of a course of a minerva user
+	 * @param minerva
+	 * @param cid
+	 * @return
+	 */
 	public Tools fetchTools(Minerva minerva, String cid) {
-		toolsData=null;
-		minerva.getTools(new ExecutionDataHolder() {
-
-			@Override
-			public void onError(Exception e) {
-				System.out.println("error");
-			}
-
-			@Override
-			public void onComplete(DataHolder data) {
-				toolsData=data;
-			}
-			
-		},cid);
-		
-		while(toolsData==null) {
-			if(minerva.isError())
-				return null;
-			try {
-				Thread.sleep(100);
-			} catch (InterruptedException e1) {
-				e1.printStackTrace();
-				minerva.setError();
-				return null;
-			}
-		}
-		System.out.println("CONTINUE");
-		if(toolsData.getData()==null || toolsData.getData().length==0 || toolsData.getData()[0].getData()==null || toolsData.getData()[0].getData().length==0) {
+		FetchTools fetcher=fetchTools.get(cid);
+		if(fetcher==null){
 			minerva.setError();
 			return null;
 		}
-
+		
+		DataHolder toolsData=fetcher.fetch(minerva);
+		if(toolsData==null){
+			minerva.setError();
+			return null;
+		}
+		
 		Tools tools=new Tools(toolsData);
 		for(int i=0;i<courses.length;i++) {
 			if(courses[i].getCid().equals(cid))
@@ -116,6 +74,11 @@ public class Fetcher{
 		return tools;
 	}
 	
+	/**
+	 * Gets the tools of a course of a minerva user, will be null if this hasn't been fetched first
+	 * @param cid
+	 * @return
+	 */
 	public Tools getTools(String cid) {
 		if(courses==null)
 			return null;
@@ -126,37 +89,25 @@ public class Fetcher{
 		return null;
 	}
 	
+	/**
+	 * Fetches the announcement of a course
+	 * @param minerva
+	 * @param cid
+	 * @return
+	 */
 	public Announcement[] fetchAnnouncements(Minerva minerva, String cid) {
-		announcementsData=null;
-		minerva.getAnnouncements(new ExecutionDataHolder() {
-
-			@Override
-			public void onError(Exception e) {
-				System.out.println("error");
-			}
-
-			@Override
-			public void onComplete(DataHolder data) {
-				announcementsData=data;
-			}
-			
-		},cid);
-		
-		while(announcementsData==null) {
-			if(minerva.isError())
-				return null;
-			try {
-				Thread.sleep(100);
-			} catch (InterruptedException e1) {
-				e1.printStackTrace();
-				return null;
-			}
+		FetchAnnouncements fetcher=fetchAnnouncements.get(cid);
+		if(fetcher==null){
+			minerva.setError();
+			return null;
 		}
 		
-		if(announcementsData.getData()==null || announcementsData.getData().length==0 || announcementsData.getData()[0].getData()==null || announcementsData.getData()[0].getData().length==0)
+		DataHolder announcementsData=fetcher.fetch(minerva);
+		if(announcementsData==null){
+			minerva.setError();
 			return null;
+		}
 		
-		//Tools tools=new Tools(toolsData);
 		Announcement[] announcements=new Announcement[announcementsData.getData()[0].getData().length];
 		for(int i=0;i<announcements.length;i++) {
 			announcements[i]=new Announcement(announcementsData.getData()[0].getData()[i]);

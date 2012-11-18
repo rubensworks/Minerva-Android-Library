@@ -113,6 +113,7 @@ public class Minerva{
 		while (sid==null) {
 			if(error) {
 				loggedIn=false;
+				return loggedIn;
 			}
 			try {
 				Thread.sleep(10);
@@ -156,7 +157,6 @@ public class Minerva{
 	}
 	
 	private String getSID(String username, String pwd, String salt) {
-		
 		Cookie sessionCookie =null;
 		HttpPost httpPost = new HttpPost(DATAURLMAP.get("minerva.login")); 
 		DefaultHttpClient httpclient = new DefaultHttpClient();
@@ -174,6 +174,7 @@ public class Minerva{
 			// TODO Auto-generated catch block
 			e2.printStackTrace();
 			error=true;
+			return null;
 		}
 		httpPost.setEntity(formEntity);
 		HttpResponse response=null;
@@ -183,12 +184,13 @@ public class Minerva{
 			// TODO Auto-generated catch block
 			e1.printStackTrace();
 			error=true;
+			return null;
 			
 		} catch (IOException e1) {
 			// TODO Auto-generated catch block
 			e1.printStackTrace();
 			error=true;
-			
+			return null;
 		}
 		Header[] allHeaders = response.getAllHeaders();
 		CookieOrigin origin = new CookieOrigin("https://minerva.ugent.be", 80,"/secure/index.php?external=true", false);
@@ -202,6 +204,7 @@ public class Minerva{
 						// TODO Auto-generated catch block
 						e.printStackTrace();
 						error=true;
+						return null;
 					}
 					for (Cookie cookie : parse) {
 						// THE cookie
