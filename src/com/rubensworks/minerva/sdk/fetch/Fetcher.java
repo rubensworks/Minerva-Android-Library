@@ -120,4 +120,19 @@ public class Fetcher{
 		
 		return announcements;
 	}
+	
+	/**
+	 * Gets the announcements of a course of a minerva user, will be null if this hasn't been fetched first
+	 * @param cid
+	 * @return
+	 */
+	public Announcement[] getAnnouncements(String cid) {
+		if(courses==null)
+			return null;
+		for(int i=0;i<courses.length;i++) {
+			if(courses[i].getCid().equals(cid))
+				return courses[i].getAnnouncements();
+		}
+		return null;
+	}
 }
