@@ -37,8 +37,8 @@ public class Fetcher{
 		courses=new Course[data.length];
 		courseMap=new HashMap<String, Course>();
 		for(int i=0;i<data.length;i++) {
-			String cid=data[i].getData()[0].getValue();
-			String name=data[i].getData()[1].getValue();
+			String cid=data[i].getData("cid").getValue();//data[i].getData()[0].getValue();
+			String name=data[i].getData("name").getValue();//data[i].getData()[1].getValue();
 			courses[i]=new Course(cid,name);
 			courseMap.put(cid,courses[i]);
 			fetchTools.put(cid, new FetchTools(cid));

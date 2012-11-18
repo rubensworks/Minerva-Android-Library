@@ -17,6 +17,8 @@ public class Announcement {
 		this.visibility=data.getData()[3].getValue();
 		this.created=data.getData()[4].getValue();
 		this.content=data.getData()[5].getValue();
+		this.id=data.getData("id").getValue();
+		//...
 	}
 	
 	public Announcement(String id, String title, boolean mailed, String visibility, String created, String content) {

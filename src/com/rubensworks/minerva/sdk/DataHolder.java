@@ -1,6 +1,7 @@
 package com.rubensworks.minerva.sdk;
 
-import java.io.Serializable;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
@@ -14,6 +15,7 @@ public class DataHolder{
 	private String name;
 	private String value;
 	private DataHolder[] data;
+	private Map<String, DataHolder> dataMap;
 	private boolean leaf;
 	
 	/**
@@ -33,10 +35,11 @@ public class DataHolder{
 	 * @param name
 	 * @param data
 	 */
-	public DataHolder(String name, DataHolder[] data) {
+	public DataHolder(String name, DataHolder[] data, Map<String, DataHolder> dataMap) {
 		this.name=name;
 		this.value=null;
 		this.data=data;
+		this.dataMap=dataMap;
 		this.leaf=false;
 	}
 	
@@ -70,6 +73,15 @@ public class DataHolder{
 	 */
 	public DataHolder[] getData() {
 		return this.data;
+	}
+	
+	/**
+	 * Gets the sub dataholder with name
+	 * @param name
+	 * @return
+	 */
+	public DataHolder getData(String name) {
+		return this.dataMap.get(name);
 	}
 	
 	/**
@@ -123,15 +135,17 @@ public class DataHolder{
 	            }
 	        }
 			DataHolder[] data=new DataHolder[amount];
+			Map<String, DataHolder> dataMap=new HashMap<String, DataHolder>();
 			int j=0;
 			for (int i = 0; i < nodeList.getLength(); i++) {
 	            Node currentNode = nodeList.item(i);
 	            if(currentNode.getChildNodes().getLength()>0) {
 	            	data[j]=DataHolder.addNodes(currentNode);
+	            	dataMap.put(currentNode.getNodeName(),data[j]);
 	            	j++;
 	            }
 	        }
-			return new DataHolder(node.getNodeName(),data);
+			return new DataHolder(node.getNodeName(),data,dataMap);
 		}
     }
 	
