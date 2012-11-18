@@ -37,6 +37,7 @@ import com.rubensworks.minerva.sdk.fetch.Fetcher;
 //FOR COOKIES: http://blog.dahanne.net/2009/08/16/how-to-access-http-resources-from-android/
 public class Minerva{
 	private Executor exec=Executors.newSingleThreadExecutor();
+	private Executor execLogin=Executors.newSingleThreadExecutor();
 
 	private static final Map<String,String> DATAURLMAP=new HashMap<String,String>();//to save the urls
 	private volatile DataHolder tmpHolder=null;										//temp dataholder
@@ -78,6 +79,12 @@ public class Minerva{
 		});
 	}
 	
+	/**
+	 * Converts two arrays to a URL compatible String
+	 * @param names
+	 * @param params
+	 * @return
+	 */
 	private String makeParams(String[] names, String[] params) {
 		String string="";
 		for(int i=0;i<params.length;i++) {
@@ -86,6 +93,12 @@ public class Minerva{
 		return "&username="+username+"&cookie="+sid+string;
 	}
 	
+	/**
+	 * Login (will return when logging in is done, use asyncLogin for listeners!)
+	 * @param username
+	 * @param pwd
+	 * @return
+	 */
 	public boolean login(final String username, final String pwd) {
 		this.loggedIn=false;
 		this.username=username;
@@ -108,7 +121,6 @@ public class Minerva{
 		exec.execute(new Runnable() {
 			public void run() {
 				sid=getSID(username,pwd,salt);
-		        //loggedIn=true;
 		    }});
 		while (sid==null) {
 			if(error) {
@@ -122,16 +134,40 @@ public class Minerva{
 			}
 		}
 		
-		//FETCH COURSES & CHECK IF VALID
 		loggedIn=this.getFetcher().fetchCourses(this)!=null;
 		return loggedIn;
-		//return !("".equals(sid));
 	}
 	
+	/**
+	 * Async login
+	 * @param username
+	 * @param pwd
+	 * @param listener
+	 */
+	public void asyncLogin(final String username, final String pwd, final ExecutionListener listener) {
+		execLogin.execute(new Runnable() {
+
+			@Override
+			public void run() {
+				boolean loggedIn=login(username, pwd);
+				if(loggedIn) listener.onComplete();
+				else listener.onError();
+			}
+			
+		});
+	}
+	
+	/**
+	 * Is the user logged in
+	 * @return
+	 */
 	public boolean isLoggedIn() {
 		return loggedIn;
 	}
 	
+	/**
+	 * Clear everything from this object
+	 */
 	public void logOut() {
 		this.loggedIn=false;
 		this.username=null;
@@ -140,22 +176,47 @@ public class Minerva{
 		this.sid=null;
 	}
 	
+	/**
+	 * Gets the courses
+	 * @param listener
+	 */
 	public void getCourses(ExecutionDataHolder listener) {//add check! & state update
 		this.execute(DATAURLMAP.get("courses.getCourses")+this.makeParams(new String[0],new String[0]), listener);
 	}
 	
+	/**
+	 * Gets the tools of a course
+	 * @param listener
+	 * @param cid
+	 */
 	public void getTools(ExecutionDataHolder listener, String cid) {//add check! & state update
 		this.execute(DATAURLMAP.get("courses.getTools")+this.makeParams(new String[]{"cid"},new String[]{cid}), listener);
 	}
 	
+	/**
+	 * Gets the announcements of a course
+	 * @param listener
+	 * @param cid
+	 */
 	public void getAnnouncements(ExecutionDataHolder listener, String cid) {//add check! & state update
 		this.execute(DATAURLMAP.get("courses.getAnnouncements")+this.makeParams(new String[]{"cid"},new String[]{cid}), listener);
 	}
 	
+	/**
+	 * Gets the salt
+	 * @param listener
+	 */
 	private void getSalt(ExecutionDataHolder listener) {
 		this.execute(DATAURLMAP.get("auth.getSalt"), listener);
 	}
 	
+	/**
+	 * Gets a session ID
+	 * @param username
+	 * @param pwd
+	 * @param salt
+	 * @return
+	 */
 	private String getSID(String username, String pwd, String salt) {
 		Cookie sessionCookie =null;
 		HttpPost httpPost = new HttpPost(DATAURLMAP.get("minerva.login")); 
@@ -218,6 +279,11 @@ public class Minerva{
 		return sessionCookie==null?"":sessionCookie.getValue();
 	}
 	
+	/**
+	 * Executes a request
+	 * @param dataUrl
+	 * @param listener
+	 */
 	private void execute(final String dataUrl, final ExecutionDataHolder listener) {
 		if(exec==null)
 			exec=Executors.newSingleThreadExecutor();
@@ -299,22 +365,40 @@ public class Minerva{
           });
 	}
 	
+	/**
+	 * Check if the executor is fecthing
+	 * @return
+	 */
 	public boolean isFetching() {
 		return this.fetching;
 	}
 	
+	/**
+	 * Has an error occured?
+	 * @return
+	 */
 	public boolean isError() {
 		return this.error;
 	}
 	
+	/**
+	 * Say an error has occured
+	 */
 	public void setError() {
 		this.error=true;
 	}
 	
+	/**
+	 * Resets the error field (call after error msg has been shown!)
+	 */
 	public void resetError() {
 		this.error=false;
 	}
 	
+	/**
+	 * Gets the data fetcher
+	 * @return
+	 */
 	public Fetcher getFetcher() {
 		return this.fetcher;
 	}
