@@ -20,8 +20,8 @@ public class Tools {
 		enabled=new boolean[toolsData.length];
 		tools=new String[toolsData.length];
 		for(int i=0;i<toolsData.length;i++) {
-			tools[i]=toolsData[i].getData()[0].getValue();
-			enabled[i]="1".equals(toolsData[i].getData()[1].getValue());
+			tools[i]=toolsData[i].getData("name").getValue();
+			enabled[i]="1".equals(toolsData[i].getData("enabled").getValue());
 			if(enabled[i]) amountEnabled++;
 		}
 		makeEnabledTools();

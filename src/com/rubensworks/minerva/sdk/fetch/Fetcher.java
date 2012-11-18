@@ -37,8 +37,8 @@ public class Fetcher{
 		courses=new Course[data.length];
 		courseMap=new HashMap<String, Course>();
 		for(int i=0;i<data.length;i++) {
-			String cid=data[i].getData("cid").getValue();//data[i].getData()[0].getValue();
-			String name=data[i].getData("name").getValue();//data[i].getData()[1].getValue();
+			String cid=data[i].getData("cid").getValue();
+			String name=data[i].getData("name").getValue();
 			courses[i]=new Course(cid,name);
 			courseMap.put(cid,courses[i]);
 			fetchTools.put(cid, new FetchTools(cid));
@@ -184,5 +184,28 @@ public class Fetcher{
 			return null;
 		courseMap.get(cid).getAnnouncements();
 		return null;
+	}
+	
+	/**
+	 * Gets the announcements async
+	 * @return
+	 */
+	public void getAnnouncementsAsync(final Minerva minerva, final ExecutionAnnouncementsListener listener, final String cid) {
+		Announcement[] theseAnnouncements=courseMap.get(cid).getAnnouncements();
+		if(theseAnnouncements!=null) {
+			listener.onComplete(theseAnnouncements);
+		}
+		else {
+			asyncExec.execute(new Runnable() {
+
+				@Override
+				public void run() {
+					Announcement[] fetchedAnnouncements=fetchAnnouncements(minerva,cid);
+					if(fetchedAnnouncements==null) listener.onError();
+					else listener.onComplete(fetchedAnnouncements);
+				}
+				
+			});
+		}
 	}
 }
