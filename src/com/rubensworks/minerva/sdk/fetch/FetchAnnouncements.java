@@ -2,7 +2,6 @@ package com.rubensworks.minerva.sdk.fetch;
 
 import com.rubensworks.minerva.sdk.DataHolder;
 import com.rubensworks.minerva.sdk.Minerva;
-import com.rubensworks.minerva.sdk.ExecutionDataHolder;
 
 public class FetchAnnouncements extends Fetch{
 	private String cid;

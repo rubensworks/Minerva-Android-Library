@@ -1,7 +1,6 @@
 package com.rubensworks.minerva.sdk.fetch;
 
 import com.rubensworks.minerva.sdk.DataHolder;
-import com.rubensworks.minerva.sdk.ExecutionDataHolder;
 import com.rubensworks.minerva.sdk.Minerva;
 
 public abstract class Fetch {

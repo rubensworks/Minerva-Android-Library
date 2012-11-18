@@ -30,7 +30,7 @@ public class Course{
 	}
 	
 	public void setTools(Tools tools) {
-		System.out.println("SET:"+tools);
+		//System.out.println("SET:"+tools);
 		this.tools=tools;
 	}
 	

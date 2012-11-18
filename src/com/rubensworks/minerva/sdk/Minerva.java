@@ -1,7 +1,6 @@
 package com.rubensworks.minerva.sdk;
 
 import java.io.IOException;
-import java.io.Serializable;
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -32,6 +31,10 @@ import org.apache.http.params.HttpParams;
 import org.w3c.dom.Document;
 import org.xml.sax.SAXException;
 
+import android.util.Log;
+
+import com.rubensworks.minerva.sdk.fetch.ExecutionDataHolder;
+import com.rubensworks.minerva.sdk.fetch.ExecutionLoginListener;
 import com.rubensworks.minerva.sdk.fetch.Fetcher;
 
 //FOR COOKIES: http://blog.dahanne.net/2009/08/16/how-to-access-http-resources-from-android/
@@ -49,6 +52,7 @@ public class Minerva{
 	private volatile boolean fetching=false;										//if the executor is busy fetching something
 	//public String data=null;	
 	private Fetcher fetcher=new Fetcher();
+	public static final String LOG="MinervaLibrary";
 	
 	public Minerva() {
 		
@@ -104,11 +108,13 @@ public class Minerva{
 		this.username=username;
 		this.fetcher=new Fetcher();//resets the fetched data from the previous session
 		if(error) {
+			Log.d(LOG,"Error is still active.");
 			return false;
 		}
 		
 		while (salt==null) {
 			if(error) {
+				Log.d(LOG,"Error while getting salt.");
 				return false;
 			}
 			try {
@@ -117,6 +123,7 @@ public class Minerva{
 				//do nothing
 			}
 		}
+		Log.d(LOG,"Got salt.");
 		
 		exec.execute(new Runnable() {
 			public void run() {
@@ -124,6 +131,7 @@ public class Minerva{
 		    }});
 		while (sid==null) {
 			if(error) {
+				Log.d(LOG,"Error while getting SID.");
 				loggedIn=false;
 				return loggedIn;
 			}
@@ -133,8 +141,10 @@ public class Minerva{
 				//do nothing
 			}
 		}
+		Log.d(LOG,"Got SID..");
 		
 		loggedIn=this.getFetcher().fetchCourses(this)!=null;
+		Log.d(LOG,loggedIn?"Fetched courses.":"Error while fetching courses.");
 		return loggedIn;
 	}
 	
@@ -144,7 +154,7 @@ public class Minerva{
 	 * @param pwd
 	 * @param listener
 	 */
-	public void asyncLogin(final String username, final String pwd, final ExecutionListener listener) {
+	public void asyncLogin(final String username, final String pwd, final ExecutionLoginListener listener) {
 		execLogin.execute(new Runnable() {
 
 			@Override
@@ -285,6 +295,7 @@ public class Minerva{
 	 * @param listener
 	 */
 	private void execute(final String dataUrl, final ExecutionDataHolder listener) {
+		Log.d(LOG,"Executing: "+dataUrl);
 		if(exec==null)
 			exec=Executors.newSingleThreadExecutor();
 		exec.execute(new Runnable() {
@@ -303,11 +314,13 @@ public class Minerva{
         			e.printStackTrace();
         			error=true;
         			listener.onError(e);
+        			return;
         		} catch (IOException e) { 
         			listener.onError(e);
         			e.printStackTrace();
         			error=true;
         			listener.onError(e);
+        			return;
         		}
         		if(resp!=null) {
 	            	DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
@@ -321,21 +334,25 @@ public class Minerva{
 	        			listener.onError(e);
 	        			error=true;
 	        			listener.onError(e);
+	        			return;
 	        		} catch (IllegalStateException e) {
 	        			e.printStackTrace();
 	        			listener.onError(e);
 	        			error=true;
 	        			listener.onError(e);
+	        			return;
 	        		} catch (SAXException e) {
 	        			e.printStackTrace();
 	        			listener.onError(e);
 	        			error=true;
 	        			listener.onError(e);
+	        			return;
 	        		} catch (IOException e) {
 	        			e.printStackTrace();
 	        			listener.onError(e);
 	        			error=true;
 	        			listener.onError(e);
+	        			return;
 	        		}
 	        		
 	        		if(doc!=null) {
@@ -347,18 +364,21 @@ public class Minerva{
 		        			e.printStackTrace();
 		        			error=true;
 		        			listener.onError(e);
+		        			return;
 		        		}
 	        		}
 	        		else
 	        		{
 	        			error=true;
 	        			listener.onError(null);
+	        			return;
 	        		}
         		}
         		else
         		{
         			error=true;
         			listener.onError(null);
+        			return;
         		}
         		fetching=false;
             }
