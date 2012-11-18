@@ -7,7 +7,7 @@ public class Tools {
 	private boolean[] enabled;
 	
 	public Tools(DataHolder data) {		
-		DataHolder[] toolsData=data.getData()[1].getData();
+		DataHolder[] toolsData=data.getData()[0].getData();
 		enabled=new boolean[toolsData.length];
 		tools=new String[toolsData.length];
 		for(int i=0;i<toolsData.length;i++) {
@@ -23,5 +23,14 @@ public class Tools {
 				return enabled[i];
 		}
 		return false;
+	}
+	
+	@Override
+	public String toString() {
+		String s="";
+		for(int i=0;i<tools.length;i++) {
+			s+=tools[i]+":"+enabled[i]+";";
+		}
+		return s;
 	}
 }

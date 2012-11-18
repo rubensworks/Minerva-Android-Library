@@ -10,7 +10,7 @@ import org.w3c.dom.NodeList;
  * @author Ruben Taelman
  *
  */
-public class DataHolder implements Serializable{
+public class DataHolder{
 	private String name;
 	private String value;
 	private DataHolder[] data;

@@ -44,7 +44,7 @@ public class Minerva{
 	private volatile String sid=null;												//session id from cookie
 	private String username=null;													//username after logging in
 	private boolean loggedIn=false;													//if user is logged in
-	private boolean error=false;													//if an error occured
+	private volatile boolean error=false;													//if an error occured
 	private volatile boolean fetching=false;										//if the executor is busy fetching something
 	//public String data=null;	
 	private Fetcher fetcher=new Fetcher();
@@ -55,6 +55,7 @@ public class Minerva{
 		DATAURLMAP.put("auth.getSalt", 			"http://minerva.rubensworks.net/v1/xml?method=auth.getSalt");
 		DATAURLMAP.put("courses.getCourses", 	"http://minerva.rubensworks.net/v1/xml?method=courses.getCourses");
 		DATAURLMAP.put("courses.getTools",	 	"http://minerva.rubensworks.net/v1/xml?method=courses.getTools");
+		DATAURLMAP.put("courses.getAnnouncements",	 	"http://minerva.rubensworks.net/v1/xml?method=courses.getAnnouncements");
 		DATAURLMAP.put("minerva.login", 		"https://minerva.ugent.be/secure/index.php?external=true");
 		DATAURLMAP.put("minerva.index", 		"https://minerva.ugent.be/index.php");
 		
@@ -107,11 +108,11 @@ public class Minerva{
 		exec.execute(new Runnable() {
 			public void run() {
 				sid=getSID(username,pwd,salt);
-		        loggedIn=true;
+		        //loggedIn=true;
 		    }});
 		while (sid==null) {
 			if(error) {
-				return false;
+				loggedIn=false;
 			}
 			try {
 				Thread.sleep(10);
@@ -121,8 +122,8 @@ public class Minerva{
 		}
 		
 		//FETCH COURSES & CHECK IF VALID
-		return this.getFetcher().fetchCourses(this)!=null;
-		
+		loggedIn=this.getFetcher().fetchCourses(this)!=null;
+		return loggedIn;
 		//return !("".equals(sid));
 	}
 	
@@ -144,6 +145,10 @@ public class Minerva{
 	
 	public void getTools(ExecutionDataHolder listener, String cid) {//add check! & state update
 		this.execute(DATAURLMAP.get("courses.getTools")+this.makeParams(new String[]{"cid"},new String[]{cid}), listener);
+	}
+	
+	public void getAnnouncements(ExecutionDataHolder listener, String cid) {//add check! & state update
+		this.execute(DATAURLMAP.get("courses.getAnnouncements")+this.makeParams(new String[]{"cid"},new String[]{cid}), listener);
 	}
 	
 	private void getSalt(ExecutionDataHolder listener) {
@@ -228,10 +233,12 @@ public class Minerva{
         			listener.onError(e);
         			e.printStackTrace();
         			error=true;
+        			listener.onError(e);
         		} catch (IOException e) { 
         			listener.onError(e);
         			e.printStackTrace();
         			error=true;
+        			listener.onError(e);
         		}
         		if(resp!=null) {
 	            	DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
@@ -244,18 +251,22 @@ public class Minerva{
 	        			e.printStackTrace();
 	        			listener.onError(e);
 	        			error=true;
+	        			listener.onError(e);
 	        		} catch (IllegalStateException e) {
 	        			e.printStackTrace();
 	        			listener.onError(e);
 	        			error=true;
+	        			listener.onError(e);
 	        		} catch (SAXException e) {
 	        			e.printStackTrace();
 	        			listener.onError(e);
 	        			error=true;
+	        			listener.onError(e);
 	        		} catch (IOException e) {
 	        			e.printStackTrace();
 	        			listener.onError(e);
 	        			error=true;
+	        			listener.onError(e);
 	        		}
 	        		
 	        		if(doc!=null) {
@@ -266,8 +277,19 @@ public class Minerva{
 		        		} catch (IOException e) {
 		        			e.printStackTrace();
 		        			error=true;
+		        			listener.onError(e);
 		        		}
 	        		}
+	        		else
+	        		{
+	        			error=true;
+	        			listener.onError(null);
+	        		}
+        		}
+        		else
+        		{
+        			error=true;
+        			listener.onError(null);
         		}
         		fetching=false;
             }
@@ -280,6 +302,10 @@ public class Minerva{
 	
 	public boolean isError() {
 		return this.error;
+	}
+	
+	public void setError() {
+		this.error=true;
 	}
 	
 	public void resetError() {
