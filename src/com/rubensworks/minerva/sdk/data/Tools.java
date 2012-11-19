@@ -16,7 +16,7 @@ public class Tools {
 		ACTIVE.put("announcement", true);
 		//ACTIVE.put("document", true);
 		
-		DataHolder[] toolsData=data.getData()[0].getData();
+		DataHolder[] toolsData=data.getData("tools").getData();
 		enabled=new boolean[toolsData.length];
 		tools=new String[toolsData.length];
 		for(int i=0;i<toolsData.length;i++) {

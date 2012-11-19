@@ -161,7 +161,10 @@ public class Minerva{
 			public void run() {
 				boolean loggedIn=login(username, pwd);
 				if(loggedIn) listener.onComplete();
-				else listener.onError();
+				else {
+					logOut();//clear cached stuff to avoid nasty errors
+					listener.onError();
+				}
 			}
 			
 		});

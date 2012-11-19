@@ -9,6 +9,7 @@ public abstract class Fetch {
 
 		@Override
 		public void onError(Exception e) {
+			System.out.println(e.getMessage());
 			System.out.println("error");
 		}
 
@@ -38,8 +39,8 @@ public abstract class Fetch {
 		
 		if(data.getData()==null 
 				|| data.getData().length==0 
-				|| data.getData()[0].getData()==null 
-				|| data.getData()[0].getData().length==0
+				//|| data.getData()[0].getData()==null 
+				//|| data.getData()[0].getData().length==0
 				)
 			return false;
 		
