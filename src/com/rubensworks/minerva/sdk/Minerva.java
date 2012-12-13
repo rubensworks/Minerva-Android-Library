@@ -27,6 +27,8 @@ import org.apache.http.cookie.MalformedCookieException;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.impl.cookie.BrowserCompatSpec;
 import org.apache.http.message.BasicNameValuePair;
+import org.apache.http.params.BasicHttpParams;
+import org.apache.http.params.HttpConnectionParams;
 import org.apache.http.params.HttpParams;
 import org.w3c.dom.Document;
 import org.xml.sax.SAXException;
@@ -54,7 +56,13 @@ public class Minerva{
 	private Fetcher fetcher=new Fetcher();
 	public static final String LOG="MinervaLibrary";
 	
+	private static final int TIMEOUT = 3000;
+	HttpParams httpParameters;
+	
 	public Minerva() {
+		HttpParams httpParameters = new BasicHttpParams();
+		HttpConnectionParams.setConnectionTimeout(httpParameters, TIMEOUT);
+		HttpConnectionParams.setSoTimeout(httpParameters, TIMEOUT);
 		
 		//put map data
 		DATAURLMAP.put("auth.getSalt", 			"http://minerva.rubensworks.net/v1/xml?method=auth.getSalt");
@@ -211,8 +219,10 @@ public class Minerva{
 	 * @param listener
 	 * @param cid
 	 */
-	public void getAnnouncements(ExecutionDataHolder listener, String cid) {//add check! & state update
-		this.execute(DATAURLMAP.get("courses.getAnnouncements")+this.makeParams(new String[]{"cid"},new String[]{cid}), listener);
+	public void getAnnouncements(ExecutionDataHolder listener, String cid, int prev, int amount) {//add check! & state update
+		int page=(prev/amount) + 1;
+		int perpage=amount;
+		this.execute(DATAURLMAP.get("courses.getAnnouncements")+this.makeParams(new String[]{"cid","page","perpage"},new String[]{cid,Integer.toString(page),Integer.toString(perpage)}), listener);
 	}
 	
 	/**
@@ -233,7 +243,7 @@ public class Minerva{
 	private String getSID(String username, String pwd, String salt) {
 		Cookie sessionCookie =null;
 		HttpPost httpPost = new HttpPost(DATAURLMAP.get("minerva.login")); 
-		DefaultHttpClient httpclient = new DefaultHttpClient();
+		DefaultHttpClient httpclient = new DefaultHttpClient(httpParameters);
 		HttpParams params = httpclient.getParams(); 
 		HttpClientParams.setRedirecting(params, false); 
 		ArrayList<NameValuePair> postParameters = new ArrayList<NameValuePair>();
@@ -308,7 +318,7 @@ public class Minerva{
             	
             	HttpGet uri = new HttpGet(dataUrl);    
 
-            	DefaultHttpClient client = new DefaultHttpClient();
+            	DefaultHttpClient client = new DefaultHttpClient(httpParameters);
             	HttpResponse resp = null;
         		try {
         			resp = client.execute(uri);
@@ -327,6 +337,7 @@ public class Minerva{
         		}
         		if(resp!=null) {
 	            	DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+	            	//factory.setExpandEntityReferences(false); // PREVENT EXPANSION
 	            	DocumentBuilder builder;
 	            	Document doc=null;
 	        		try {
@@ -361,6 +372,7 @@ public class Minerva{
 	        		if(doc!=null) {
 		        		try {
 		        			resp.getEntity().consumeContent();
+		        			doc.getDocumentElement().normalize();
 		        			DataHolder data=DataHolder.addNodes(doc.getDocumentElement());
 		        			listener.onComplete(data);
 		        		} catch (IOException e) {

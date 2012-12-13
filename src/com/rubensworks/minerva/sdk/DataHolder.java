@@ -3,6 +3,7 @@ package com.rubensworks.minerva.sdk;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
@@ -123,8 +124,9 @@ public class DataHolder{
 	 */
 	public static DataHolder addNodes(Node node) {
 		NodeList nodeList = node.getChildNodes();
-		if(nodeList.getLength()==1)
+		if(nodeList.getLength()==1) {
 			return new DataHolder(node.getNodeName(),node.getTextContent());
+		}
 		else {
 			//looping trough the array twice to count how much non-empty nodes there are
 			int amount=0;

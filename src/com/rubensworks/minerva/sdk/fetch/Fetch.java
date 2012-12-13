@@ -56,4 +56,11 @@ public abstract class Fetch {
 		if(!dataHolderSleeper(minerva)) return null;
 		return data;
 	}
+	
+	/**
+	 * Always call this before starting a new fetching
+	 */
+	public void reset() {
+		this.data=null;
+	}
 }

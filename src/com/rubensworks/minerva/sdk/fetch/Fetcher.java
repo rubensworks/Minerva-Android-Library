@@ -1,6 +1,8 @@
 package com.rubensworks.minerva.sdk.fetch;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
@@ -34,6 +36,10 @@ public class Fetcher{
 		}
 		
 		DataHolder[] data=coursesData.getData()[0].getData();
+		if(data[0].getData().length==0) {
+			minerva.setError();
+			return null;
+		}
 		courses=new Course[data.length];
 		courseMap=new HashMap<String, Course>();
 		for(int i=0;i<data.length;i++) {
@@ -151,25 +157,30 @@ public class Fetcher{
 	 * @param cid
 	 * @return
 	 */
-	public Announcement[] fetchAnnouncements(Minerva minerva, String cid) {
+	public List<Announcement> fetchAnnouncements(Minerva minerva, String cid, int amount) {
+		int prev=courseMap.get(cid).getFetchedAnnouncements();
 		FetchAnnouncements fetcher=fetchAnnouncements.get(cid);
 		if(fetcher==null){
 			minerva.setError();
 			return null;
 		}
 		
+		fetcher.setPrev(prev);
+		fetcher.setAmount(amount);
 		DataHolder announcementsData=fetcher.fetch(minerva);
 		if(announcementsData==null){
 			minerva.setError();
 			return null;
 		}
 		
-		Announcement[] announcements=new Announcement[announcementsData.getData()[0].getData().length];
-		for(int i=0;i<announcements.length;i++) {
-			announcements[i]=new Announcement(announcementsData.getData()[0].getData()[i]);
+		List<Announcement> announcements=courseMap.get(cid).getAnnouncements();
+		for(int i=0;i<announcementsData.getData()[0].getData().length;i++) {
+			announcements.add(new Announcement(announcementsData.getData()[0].getData()[i]));
 		}
 		
-		courseMap.get(cid).setAnnouncements(announcements);
+		//courseMap.get(cid).setAnnouncements(announcements);
+		courseMap.get(cid).setFetchedAnnouncements(prev+amount);
+		courseMap.get(cid).setTotalAnnouncements(Integer.parseInt(announcementsData.getData("pageing").getData("posts").getValue()));
 		
 		return announcements;
 	}
@@ -179,20 +190,19 @@ public class Fetcher{
 	 * @param cid
 	 * @return
 	 */
-	public Announcement[] getAnnouncements(String cid) {
+	public List<Announcement> getAnnouncements(String cid) {
 		if(courses==null)
 			return null;
-		courseMap.get(cid).getAnnouncements();
-		return null;
+		return courseMap.get(cid).getAnnouncements();
 	}
 	
 	/**
 	 * Gets the announcements async
 	 * @return
 	 */
-	public void getAnnouncementsAsync(final Minerva minerva, final ExecutionAnnouncementsListener listener, final String cid) {
-		Announcement[] theseAnnouncements=courseMap.get(cid).getAnnouncements();
-		if(theseAnnouncements!=null) {
+	public void getAnnouncementsAsync(final Minerva minerva, final ExecutionAnnouncementsListener listener, final String cid, final int amount) {
+		List<Announcement> theseAnnouncements=courseMap.get(cid).getAnnouncements();
+		if(!theseAnnouncements.isEmpty()) {
 			listener.onComplete(theseAnnouncements);
 		}
 		else {
@@ -200,7 +210,7 @@ public class Fetcher{
 
 				@Override
 				public void run() {
-					Announcement[] fetchedAnnouncements=fetchAnnouncements(minerva,cid);
+					List<Announcement> fetchedAnnouncements=fetchAnnouncements(minerva,cid,amount);
 					if(fetchedAnnouncements==null) listener.onError();
 					else listener.onComplete(fetchedAnnouncements);
 				}

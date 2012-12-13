@@ -7,6 +7,7 @@ public class FetchCourses extends Fetch{
 	
 	@Override
 	public DataHolder fetch(Minerva minerva) {
+		this.reset();
 		minerva.getCourses(defaultExecutionDataHolder);
 		return super.fetch(minerva);
 	}

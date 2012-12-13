@@ -12,6 +12,7 @@ public class FetchTools extends Fetch{
 
 	@Override
 	public DataHolder fetch(Minerva minerva) {
+		this.reset();
 		minerva.getTools(defaultExecutionDataHolder,cid);
 		return super.fetch(minerva);
 	}

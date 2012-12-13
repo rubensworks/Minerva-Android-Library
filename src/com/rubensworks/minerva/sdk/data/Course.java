@@ -1,12 +1,15 @@
 package com.rubensworks.minerva.sdk.data;
 
-import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.List;
 
 public class Course{
 	private String name;
 	private String cid;
 	private Tools tools;
-	private Announcement[] announcements;
+	private List<Announcement> announcements=new ArrayList<Announcement>();
+	private int fetchedAnnouncements=0;
+	private int totalAnnouncements=0;
 	
 	public Course(String cid, String name) {
 		this.cid=cid;
@@ -25,17 +28,31 @@ public class Course{
 		return this.tools;
 	}
 	
-	public Announcement[] getAnnouncements() {
+	public List<Announcement> getAnnouncements() {
 		return this.announcements;
 	}
 	
 	public void setTools(Tools tools) {
-		//System.out.println("SET:"+tools);
 		this.tools=tools;
 	}
 	
-	public void setAnnouncements(Announcement[] announcements) {
-		System.out.println("SET:"+announcements);
+	public void setAnnouncements(List<Announcement> announcements) {
 		this.announcements=announcements;
+	}
+	
+	public int getFetchedAnnouncements() {
+		return this.fetchedAnnouncements;
+	}
+	
+	public int getTotalAnnouncements() {
+		return this.totalAnnouncements;
+	}
+	
+	public void setFetchedAnnouncements(int fetchedAnnouncements) {
+		this.fetchedAnnouncements=fetchedAnnouncements;
+	}
+	
+	public void setTotalAnnouncements(int totalAnnouncements) {
+		this.totalAnnouncements=totalAnnouncements;
 	}
 }
