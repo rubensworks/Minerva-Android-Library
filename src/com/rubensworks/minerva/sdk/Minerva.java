@@ -35,6 +35,7 @@ import org.xml.sax.SAXException;
 
 import android.util.Log;
 
+import com.rubensworks.minerva.sdk.data.Course;
 import com.rubensworks.minerva.sdk.fetch.ExecutionDataHolder;
 import com.rubensworks.minerva.sdk.fetch.ExecutionLoginListener;
 import com.rubensworks.minerva.sdk.fetch.Fetcher;
@@ -112,9 +113,11 @@ public class Minerva{
 	 * @return
 	 */
 	public boolean login(final String username, final String pwd) {
+		boolean earlierLoggedIn=username.equals(this.username);
 		this.loggedIn=false;
 		this.username=username;
-		this.fetcher=new Fetcher();//resets the fetched data from the previous session
+		if(!earlierLoggedIn)
+			this.fetcher=new Fetcher();//resets the fetched data from the previous session
 		if(error) {
 			Log.d(LOG,"Error is still active.");
 			return false;
@@ -151,8 +154,14 @@ public class Minerva{
 		}
 		Log.d(LOG,"Got SID..");
 		
-		loggedIn=this.getFetcher().fetchCourses(this)!=null;
-		Log.d(LOG,loggedIn?"Fetched courses.":"Error while fetching courses.");
+		if(earlierLoggedIn) {
+			loggedIn=true;
+			Log.d(LOG,username+" was already logged in.");
+		}
+		else {
+			loggedIn=this.getFetcher().fetchCourses(this)!=null;
+			Log.d(LOG,loggedIn?"Fetched courses.":"Error while fetching courses.");
+		}
 		return loggedIn;
 	}
 	

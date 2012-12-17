@@ -1,9 +1,10 @@
 package com.rubensworks.minerva.sdk.data;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
-public class Course{
+public class Course implements Serializable{
 	private String name;
 	private String cid;
 	private Tools tools;
@@ -26,6 +27,12 @@ public class Course{
 	
 	public Tools getTools() {
 		return this.tools;
+	}
+	
+	public void resetAnnouncements() {
+		this.announcements=new ArrayList<Announcement>();
+		this.setTotalAnnouncements(0);
+		this.setFetchedAnnouncements(0);
 	}
 	
 	public List<Announcement> getAnnouncements() {

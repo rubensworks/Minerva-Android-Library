@@ -1,11 +1,12 @@
 package com.rubensworks.minerva.sdk.data;
 
+import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 
 import com.rubensworks.minerva.sdk.DataHolder;
 
-public class Tools {
+public class Tools implements Serializable{
 	private static final Map<String, Boolean> ACTIVE=new HashMap<String, Boolean>();
 	private String[] tools;
 	private boolean[] enabled;

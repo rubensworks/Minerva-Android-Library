@@ -1,8 +1,10 @@
 package com.rubensworks.minerva.sdk.data;
 
+import java.io.Serializable;
+
 import com.rubensworks.minerva.sdk.DataHolder;
 
-public class Announcement {
+public class Announcement implements Serializable{
 	private String id;
 	private String title;
 	private boolean mailed;

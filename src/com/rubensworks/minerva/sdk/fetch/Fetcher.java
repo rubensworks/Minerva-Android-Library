@@ -41,17 +41,22 @@ public class Fetcher{
 			return null;
 		}
 		courses=new Course[data.length];
-		courseMap=new HashMap<String, Course>();
-		for(int i=0;i<data.length;i++) {
+		for(int i=0;i<courses.length;i++) {
 			String cid=data[i].getData("cid").getValue();
 			String name=data[i].getData("name").getValue();
 			courses[i]=new Course(cid,name);
-			courseMap.put(cid,courses[i]);
 			fetchTools.put(cid, new FetchTools(cid));
 			fetchAnnouncements.put(cid, new FetchAnnouncements(cid));
 		}
+		makeCourseMap();
 		
 		return courses;
+	}
+	
+	private void makeCourseMap() {
+		courseMap=new HashMap<String, Course>();
+		for(int i=0;i<courses.length;i++)
+			courseMap.put(courses[i].getCid(),courses[i]);
 	}
 	
 	/**
@@ -216,6 +221,23 @@ public class Fetcher{
 				}
 				
 			});
+		}
+	}
+	
+	/**
+	 * Resets the cached courses, you'll have to re-fetch yourself!
+	 */
+	public void resetCourses() {
+		this.courses=null;
+		this.courseMap=null;
+	}
+	
+	/**
+	 * Resets the cached tool contents, you'll have to re-fetch yourself!
+	 */
+	public void resetTools() {
+		for(Course c : courses) {
+			c.resetAnnouncements();
 		}
 	}
 }
